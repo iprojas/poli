@@ -37,7 +37,6 @@
   
   <!-- HIRO marker — show a flat square -->
   <a-marker preset="hiro">
-    <!-- a plane slightly above the marker to avoid z-fighting -->
     <a-plane position="0 0.01 0" rotation="-90 0 0" width="1" height="1" color="#4CC3D9"></a-plane>
   </a-marker>
 
@@ -67,13 +66,10 @@
       ws.send(JSON.stringify({ type: 'phone_ready' }));
     };
     ws.onmessage = (evt) => {
-      // (Optional) react to host messages, e.g., marker change
       try {
         const msg = JSON.parse(evt.data);
-        // You could surface UI hints here if needed
         if (msg?.type === 'marker' && msg.value === 'kanji') {
-          // noop: physical marker swap already drives AR content
-          // console.log('Host switched to KANJI');
+          // Optional: react in UI; the physical marker change drives the AR content.
         }
       } catch(_) {}
     };

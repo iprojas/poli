@@ -9,22 +9,29 @@
   :root { color-scheme: light dark; }
   body{margin:0;font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;display:grid;place-items:center;min-height:100svh;background:#0b0b0b;color:#eee}
   .wrap{display:flex;flex-direction:column;gap:24px;align-items:center;max-width:900px;padding:24px;text-align:center}
+  .card{background:#111;border:1px solid #222;border-radius:16px;padding:20px;box-shadow:0 10px 40px #0007}
   .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .hint{opacity:.8;font-size:.95rem}
   #qrCanvas{width:280px;height:280px;background:#fff;border-radius:12px;padding:8px}
   img.marker{max-width:min(80vw,600px);width:100%;height:auto;background:#fff;border-radius:12px}
   a.btn{display:inline-block;padding:10px 14px;border-radius:12px;background:#2a6df4;color:#fff;text-decoration:none;font-weight:600}
+  code{background:#222;padding:.2em .4em;border-radius:.4em}
 </style>
 </head>
 <body>
 <div class="wrap">
-  
+  <h1>Socket-Synced AR Demo</h1>
+
   <!-- QR VIEW -->
   <div id="qrView" class="card">
-     <canvas id="qrCanvas"></canvas>
+    <h2>1) Scan this QR on your phone</h2>
+    <canvas id="qrCanvas"></canvas>
     <div class="row">
       <a id="openLink" class="btn" target="_blank" rel="noopener">Open on this device (debug)</a>
     </div>
-   </div>
+    <p class="hint">When the phone connects, this screen will automatically switch to the <b>HIRO</b> marker, then to <b>KANJI</b> after 5 seconds.</p>
+    <p class="hint">Room: <code id="roomText"></code></p>
+  </div>
 
   <!-- MARKER VIEW -->
   <div id="markerView" class="card" style="display:none">
