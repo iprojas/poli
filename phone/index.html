@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>poli • Phone AR</title>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; }
+      .ui {
+        position: fixed; inset: 0 auto auto 0;
+        padding: .5rem .7rem; margin: .5rem;
+        background: color-mix(in oklab, #000 60%, transparent);
+        color: #fff; border-radius: 10px; font: 12px/1.2 ui-monospace, Menlo, Consolas, monospace;
+        z-index: 9999;
+      }
+      .ui b { font-weight: 700; }
+    </style>
+
+    <!-- A-Frame + AR.js (marker-based build) -->
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script> <!-- a-torus exists in 1.7.x :contentReference[oaicite:10]{index=10} -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script> <!-- marker-based preset support (hiro/kanji) :contentReference[oaicite:11]{index=11} -->
+  </head>
+  <body>
+    <div class="ui" id="hud">Connecting…</div>
+
+    <a-scene
+      embedded
+      vr-mode-ui="enabled: false"
+      renderer="precision: medium;"
+      arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+    >
+      <!-- HIRO marker → blue square -->
+      <a-marker preset="hiro" id="marker-hiro">
+        <a-box position="0 0.5 0" depth="1" height="1" width="1" color="#4CC3D9"></a-box>
+      </a-marker>
+
+      <!-- KANJI marker → rotating torus -->
+      <a-marker preset="kanji" id="marker-kanji">
+        <a-torus
+          position="0 0.5 0"
+          radius="0.6"
+          radius-tubular="0.2"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 3500; easing: linear"
+        ></a-torus>
+      </a-marker>
+
+      <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- PieSocket (no backend needed) -->
+    <script src="https://unpkg.com/piesocket-js@5"></script>
+    <script>
+      const hud = document.getElementById('hud');
+
+      function setHUD(msg){ hud.textContent = msg; }
+
+      // Connect & announce presence
+      let channel = null;
+      try {
+        const piesocket = new PieSocket.default({
+          apiKey: 'demo',     // demo defaults documented; works for quick tests :contentReference[oaicite:12]{index=12}
+          clusterId: 'demo',
+          consoleLogs: true
+        });
+        channel = piesocket.subscribe('poli-ar-global');
+
+        channel.on('open', () => {
+          setHUD('Connected. Aim at the HIRO tag.');
+          channel.publish('phone-ready', { t: Date.now() });
+        });
+
+        channel.listen('show-hiro', () => setHUD('Aim at the HIRO tag.'));
+        channel.listen('show-kanji', () => setHUD('Now aim at the KANJI tag (torus).'));
+      } catch (e) {
+        setHUD('Socket unavailable. You can still use the markers.');
+        console.error(e);
+      }
+    </script>
+  </body>
+</html>
