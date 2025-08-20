@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Phone AR</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: light dark; }
+  html,body{margin:0;height:100%;overflow:hidden;background:#000}
+  .hud{position:fixed;inset:auto 0 0 0;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 12px;background:linear-gradient(#0000,#0008);color:#fff;font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;font-size:14px;z-index:5}
+  .badge{background:#1f6feb;border:1px solid #3a78ff;border-radius:10px;padding:4px 8px;font-weight:600}
+  .muted{opacity:.8}
+  .pill{background:#111; border:1px solid #333; border-radius:999px; padding:4px 10px}
+  .ok{color:#70ff89}
+</style>
+<!-- A-Frame & AR.js (marker-based) -->
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+
+<!-- Heads-up overlay -->
+<div class="hud">
+  <div>
+    <span class="badge">AR Running</span>
+    <span class="pill" id="roomPill">room: …</span>
+  </div>
+  <div class="muted">Point at <b>HIRO</b> → then <b>KANJI</b></div>
+</div>
+
+<!-- AR scene -->
+<a-scene
+  embedded
+  renderer="antialias: true; precision: mediump"
+  arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+  
+  <!-- HIRO marker — show a flat square -->
+  <a-marker preset="hiro">
+    <!-- a plane slightly above the marker to avoid z-fighting -->
+    <a-plane position="0 0.01 0" rotation="-90 0 0" width="1" height="1" color="#4CC3D9"></a-plane>
+  </a-marker>
+
+  <!-- KANJI marker — show a rotating torus -->
+  <a-marker preset="kanji">
+    <a-entity position="0 0.25 0">
+      <a-torus radius="0.3" radius-tubular="0.1" segments-radial="16" segments-tubular="32" color="#FFC65D"
+               animation="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear"></a-torus>
+    </a-entity>
+  </a-marker>
+
+  <a-entity camera></a-entity>
+</a-scene>
+
+<script>
+(() => {
+  const url = new URL(location.href);
+  const room = url.searchParams.get('room') || 'default';
+  document.getElementById('roomPill').textContent = `room: ${room}`;
+
+  // Minimal WebSocket "signal" back to host so it can switch from QR to markers.
+  const wsUrl = `wss://demo.piesocket.com/v3/${encodeURIComponent(room)}?api_key=demo&notify_self=1`;
+  let ws;
+  try {
+    ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'phone_ready' }));
+    };
+    ws.onmessage = (evt) => {
+      // (Optional) react to host messages, e.g., marker change
+      try {
+        const msg = JSON.parse(evt.data);
+        // You could surface UI hints here if needed
+        if (msg?.type === 'marker' && msg.value === 'kanji') {
+          // noop: physical marker swap already drives AR content
+          // console.log('Host switched to KANJI');
+        }
+      } catch(_) {}
+    };
+  } catch(e) {
+    console.warn('WS error', e);
+  }
+})();
+</script>
+</body>
+</html>
