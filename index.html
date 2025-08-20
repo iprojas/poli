@@ -9,29 +9,22 @@
   :root { color-scheme: light dark; }
   body{margin:0;font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;display:grid;place-items:center;min-height:100svh;background:#0b0b0b;color:#eee}
   .wrap{display:flex;flex-direction:column;gap:24px;align-items:center;max-width:900px;padding:24px;text-align:center}
-  .card{background:#111;border:1px solid #222;border-radius:16px;padding:20px;box-shadow:0 10px 40px #0007}
   .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:center}
-  .hint{opacity:.8;font-size:.95rem}
   #qrCanvas{width:280px;height:280px;background:#fff;border-radius:12px;padding:8px}
   img.marker{max-width:min(80vw,600px);width:100%;height:auto;background:#fff;border-radius:12px}
   a.btn{display:inline-block;padding:10px 14px;border-radius:12px;background:#2a6df4;color:#fff;text-decoration:none;font-weight:600}
-  code{background:#222;padding:.2em .4em;border-radius:.4em}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Socket-Synced AR Demo</h1>
-
+  
   <!-- QR VIEW -->
   <div id="qrView" class="card">
-    <h2>1) Scan this QR on your phone</h2>
-    <canvas id="qrCanvas"></canvas>
+     <canvas id="qrCanvas"></canvas>
     <div class="row">
       <a id="openLink" class="btn" target="_blank" rel="noopener">Open on this device (debug)</a>
     </div>
-    <p class="hint">When the phone connects, this screen will automatically switch to the <b>HIRO</b> marker, then to <b>KANJI</b> after 5 seconds.</p>
-    <p class="hint">Room: <code id="roomText"></code></p>
-  </div>
+   </div>
 
   <!-- MARKER VIEW -->
   <div id="markerView" class="card" style="display:none">
@@ -51,23 +44,20 @@
   if(!room){ room = 'r' + Math.random().toString(36).slice(2,10); url.searchParams.set('room', room); history.replaceState({}, '', url); }
   document.getElementById('roomText').textContent = room;
 
-  // --- phone link ---
-  const phoneUrl = new URL('phone.html', location.href);
+  // --- phone link (UPDATED to your GitHub Pages URL) ---
+  const PHONE_BASE = 'https://iprojas.github.io/poli/phone';
+  const phoneUrl = new URL(PHONE_BASE);
   phoneUrl.searchParams.set('room', room);
   document.getElementById('openLink').href = phoneUrl.href;
 
-  // --- draw QR ---
+  // --- draw QR pointing to your phone app URL ---
   const qrCanvas = document.getElementById('qrCanvas');
   await QRCode.toCanvas(qrCanvas, phoneUrl.href, { width: 280, margin: 1 });
 
   // --- connect WebSocket (PieSocket demo) ---
   const wsUrl = `wss://demo.piesocket.com/v3/${encodeURIComponent(room)}?api_key=demo&notify_self=1`;
   let ws;
-  try {
-    ws = new WebSocket(wsUrl);
-  } catch(e) {
-    console.error('WebSocket init error', e);
-  }
+  try { ws = new WebSocket(wsUrl); } catch(e) { console.error('WebSocket init error', e); }
 
   const $qrView = document.getElementById('qrView');
   const $markerView = document.getElementById('markerView');
@@ -90,28 +80,22 @@
     $qrView.style.display = 'none';
     $markerView.style.display = '';
     showHiro();
-    // After 5 seconds, swap to KANJI
+    // After 5 seconds, swap to KANJI and notify phone (optional)
     setTimeout(() => {
       showKanji();
-      // also notify phone (optional)
       try { ws?.readyState === 1 && ws.send(JSON.stringify({type:'marker','value':'kanji'})); } catch(_) {}
     }, 5000);
   }
 
-  // If sockets fail for any reason, allow manual switch by clicking QR card
+  // Fallback: click QR to proceed if sockets fail
   $qrView.addEventListener('click', () => switchToMarkers());
 
   if (ws) {
-    ws.onopen = () => {
-      // Identify as "host"
-      ws.send(JSON.stringify({ type: 'host_ready' }));
-    };
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'host_ready' }));
     ws.onmessage = (evt) => {
       try {
         const msg = JSON.parse(evt.data);
-        if (msg?.type === 'phone_ready') {
-          switchToMarkers();
-        }
+        if (msg?.type === 'phone_ready') switchToMarkers();
       } catch(_) {}
     };
     ws.onerror = (e) => console.warn('WS error', e);
